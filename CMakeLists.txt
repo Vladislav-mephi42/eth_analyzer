@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/analysis_engine)
 set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp_tests)
 
 include(FetchContent)
@@ -30,6 +30,11 @@ FetchContent_MakeAvailable(json catch2)
 add_executable(sockets_test ${TESTS}/sockets_test.cpp)
 target_link_libraries(sockets_test PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(sockets_test PRIVATE nlohmann_json::nlohmann_json)
-target_include_directories(sockets_test PRIVATE ${SRC}/analysis_engine)
+target_include_directories(sockets_test PRIVATE ${SRC}/)
+
+add_executable(server ${SRC}/server.cpp)
+target_link_libraries(server PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(server PRIVATE ${SRC}/analysis_engine)
 
 
