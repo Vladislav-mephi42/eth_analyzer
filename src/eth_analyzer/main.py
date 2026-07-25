@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 from web3 import Web3
 
+from .net_client import NetClient
+
 load_dotenv()
 RPC_URL = os.getenv("ALCHEMY_HTTP_URL")
 
@@ -28,19 +30,26 @@ def start():
 
     print(f"\n[ Block #{block_number} ] Total transactions: {len(transactions)}")
     print("=" * 50)
+    with NetClient("127.0.0.1", 7009) as client:
+        for new_tx in transactions[:5]:
+            tx_hash = new_tx["hash"].hex()
+            from_address = new_tx["from"]
+            to_address = new_tx["to"]
+            value_wei = new_tx["value"]
+            value_eth = w3.from_wei(value_wei, "ether")
+            tx = {}
+            tx["hash"] = "INET" + tx_hash
+            tx["from"] = "INET" + from_address
+            tx["to"] = "INET" + to_address
 
-    for tx in transactions[:5]:
-        tx_hash = tx["hash"].hex()
-        from_address = tx["from"]
-        to_address = tx["to"]
-        value_wei = tx["value"]
-        value_eth = w3.from_wei(value_wei, "ether")
+            client.send_transaction(tx)
+            tx = client.get_transaction()
 
-        print(f"Hash:  0x{tx_hash}")
-        print(f"From:  {from_address}")
-        print(f"To:    {to_address}")
-        print(f"Value: {value_eth} ETH")
-        print("-" * 50)
+            print(f"Hash:  0x{tx['hash']}")
+            print(f"From:  {tx['from']}")
+            print(f"To:    {tx['to']}")
+            print(f"Value: {value_eth} ETH")
+            print("-" * 50)
 
 
 if __name__ == "__main__":
