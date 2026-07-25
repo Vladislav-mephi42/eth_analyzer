@@ -3,6 +3,10 @@ import socket
 import struct
 
 
+def sum(a: int, b: int) -> int:
+    return a + b
+
+
 class NetClient:
     def __init__(self, host: str = "127.0.0.1", port: int = 7001):
         self.host = host
@@ -11,13 +15,16 @@ class NetClient:
 
     def connect(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket = socket.connect(self.host, self.port)
+        self.socket.connect((self.host, self.port))
         print(f"[Python] Connected to C++ Engine at {self.host}:{self.port}")
 
     def close(self):
         if self.socket:
-            self.socket.close()
-            print("[Python] Connection closed.")
+            try:
+                self.socket.close()
+                print("[Python] Connection closed.")
+            finally:
+                self.socket = None
 
     def __del__(self):
         self.close()
