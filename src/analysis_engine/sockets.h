@@ -18,8 +18,12 @@ public:
   Socket(int fd_in) { fd = fd_in; }
   ~Socket() {
     if (fd != -1) {
-      close(fd);
+      ::close(fd);
     }
+  }
+  void close() {
+    ::close(fd);
+    fd = -1;
   }
   Socket(const Socket &other) = delete;
   Socket &operator=(const Socket &other) = delete;
@@ -59,6 +63,7 @@ public:
       current += total;
     }
   }
+
   void auto_send(const char *buf, int len, int flags = 0) {
     uint32_t inet_len = htonl((uint32_t)len);
     int res = send(fd, &inet_len, sizeof(inet_len), 0);
@@ -69,10 +74,7 @@ public:
   }
   int auto_recv(char *buf, int len, int flags = 0) {
     uint32_t inet_len;
-    int res = recv(fd, &inet_len, sizeof(inet_len), 0);
-    if (res <= 0) {
-      throw std::system_error(errno, std::generic_category(), "bad recv");
-    }
+    recv_n(reinterpret_cast<char *>(&inet_len), sizeof(inet_len));
     inet_len = ntohl(inet_len);
     if (inet_len > len) {
       throw std::runtime_error("inet len is bigger than can be");
@@ -88,10 +90,7 @@ public:
   }
   json recv_json() {
     uint32_t inet_len;
-    int res = recv(fd, &inet_len, sizeof(inet_len), 0);
-    if (res <= 0) {
-      throw std::system_error(errno, std::generic_category(), "bad recv");
-    }
+    recv_n(reinterpret_cast<char *>(&inet_len), sizeof(inet_len));
     int len = ntohl(inet_len);
     std::string buf;
     buf.resize(len);
@@ -107,6 +106,10 @@ public:
       : Socket(domain, type, protocol) {}
   Client_socket(int fd) : Socket(fd) {}
   ~Client_socket() {}
+  void close() {
+    ::close(fd);
+    fd = -1;
+  }
 
   void connect(const sockaddr *addr, socklen_t addrlen) {
     if (::connect(fd, addr, addrlen) == -1) {
@@ -131,7 +134,10 @@ public:
   Server_socket(int domain, int type, int protocol)
       : Socket(domain, type, protocol) {}
   ~Server_socket() {}
-
+  void close() {
+    ::close(fd);
+    fd = -1;
+  }
   void bind(const sockaddr *addr, socklen_t addrlen) {
     if (::bind(fd, addr, addrlen) == -1) {
       throw std::system_error(errno, std::generic_category(), "bind failed");
