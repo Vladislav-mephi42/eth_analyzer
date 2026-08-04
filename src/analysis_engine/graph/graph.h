@@ -1,6 +1,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <stack>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -66,6 +67,7 @@ public:
     return first_seen_timestamp_v_;
   }
   const std::vector<uint32_t> &get_nonce_v_() const { return nonce_v_; }
+  int size() { return is_contract_v_.size(); }
 };
 enum Colour { white, grey, black };
 
@@ -76,8 +78,10 @@ private:
   NodeManager node_m_;
   EdgeStorage edg_s_;
   NodeStorage node_s_;
+  std::vector<std::pair<NodeId, Colour>> visit_map_;
 
 public:
+  int size() { return node_s_.size(); }
   void add_node(const std::string &wallet_address, bool is_contract,
                 uint64_t first_seen_timestamp, uint32_t nonce) {
     node_m_.add_wallet(wallet_address);
@@ -91,5 +95,49 @@ public:
     EdgeId edg_id =
         edg_s_.add_edge(value_eth, timestamp, gas_price_gwei, method_id);
     edg_m_.add_edge(from, to, edg_id);
+  }
+  bool is_cycled(const std::string &start_address) {
+    NodeId node_id = node_m_.get_id(start_address);
+    std::vector<NodeId> stack;
+    stack.push_back(node_id);
+    while (true) {
+      node_id = stack.back();
+      auto nodes = edg_m_.get_nodes_from(node_id);
+      if (nodes.size() == 0) {
+        break;
+      }
+      for (NodeId elem : nodes) {
+        auto it = std::find(stack.begin(), stack.end(), elem);
+        if (it != stack.end()) {
+          return true;
+        }
+        stack.push_back(elem);
+      }
+    }
+    return false;
+  }
+  bool is_path(const std::string &from_address, const std::string &to_address) {
+    NodeId from_id = node_m_.get_id(from_address);
+    NodeId to_id = node_m_.get_id(to_address);
+    std::vector<NodeId> stack;
+    stack.push_back(from_id);
+    while (true) {
+      auto node_id = stack.back();
+      auto nodes = edg_m_.get_nodes_from(node_id);
+      if (nodes.size() == 0) {
+        break;
+      }
+      for (NodeId elem : nodes) {
+        if (elem == to_id) {
+          return true;
+        }
+        auto it = std::find(stack.begin(), stack.end(), elem);
+        if (it != stack.end()) {
+          throw std::runtime_error("cycle founded");
+        }
+        stack.push_back(elem);
+      }
+    }
+    return false;
   }
 };

@@ -66,21 +66,21 @@ void EdgeManager::remove_edge(NodeId from, NodeId to) {
   edg_from_[to].erase(it);
 }
 std::vector<NodeId> EdgeManager::get_nodes_to(NodeId node_id) {
-  if (node_id >= edg_from_.size()) {
-    return std::vector<NodeId>{};
-  }
-  std::vector<NodeId> res;
-  for (const auto elem : edg_from_[node_id]) {
-    res.push_back(elem.first);
-  }
-  return res;
-}
-std::vector<NodeId> EdgeManager::get_nodes_from(NodeId node_id) {
   if (node_id >= edg_to_.size()) {
     return std::vector<NodeId>{};
   }
   std::vector<NodeId> res;
   for (const auto elem : edg_to_[node_id]) {
+    res.push_back(elem.first);
+  }
+  return res;
+}
+std::vector<NodeId> EdgeManager::get_nodes_from(NodeId node_id) {
+  if (node_id >= edg_from_.size()) {
+    return std::vector<NodeId>{};
+  }
+  std::vector<NodeId> res;
+  for (const auto elem : edg_from_[node_id]) {
     res.push_back(elem.first);
   }
   return res;
@@ -119,4 +119,5 @@ NodeId NodeStorage::add_node(bool is_contract, uint64_t first_seen_timestamp,
   is_contract_v_.push_back(is_contract);
   first_seen_timestamp_v_.push_back(first_seen_timestamp);
   nonce_v_.push_back(nonce);
+  return is_contract_v_.size();
 }
