@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=x86-64 -mtune=generic")
+
 set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/analysis_engine)
 set(TESTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp_tests)
 
@@ -31,6 +33,14 @@ add_executable(sockets_test ${TESTS}/sockets_test.cpp)
 target_link_libraries(sockets_test PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(sockets_test PRIVATE nlohmann_json::nlohmann_json)
 target_include_directories(sockets_test PRIVATE ${SRC}/)
+
+add_executable(graph_test
+    ${TESTS}/graph_test.cpp
+    ${SRC}/graph/graph.cpp)
+target_link_libraries(graph_test PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(graph_test PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(graph_test PRIVATE ${SRC}/graph/)
+
 
 add_executable(server ${SRC}/server.cpp)
 target_link_libraries(server PRIVATE Catch2::Catch2WithMain)
