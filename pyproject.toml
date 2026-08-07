@@ -8,7 +8,14 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "python-dotenv (>=1.2.2,<2.0.0)",
+    "web3 (>=7.16.0,<8.0.0)",
+    "pytest (>=9.1.1,<10.0.0)",
+    "pytest-mock (>=3.15.1,<4.0.0)"
 ]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4"
 
 [tool.poetry]
 packages = [{include = "eth_analyzer", from = "src"}]
@@ -16,3 +23,6 @@ packages = [{include = "eth_analyzer", from = "src"}]
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[project.scripts]
+start = "eth_analyzer.main:start"
