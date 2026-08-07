@@ -6,9 +6,15 @@
 #include <vector>
 
 NodeId NodeManager::add_wallet(const std::string &wallet_address) {
+  auto it =
+      std::find(eth_addresses_.begin(), eth_addresses_.end(), wallet_address);
+  if (it != eth_addresses_.end()) {
+    return -1;
+  }
   eth_addresses_.push_back(wallet_address);
   return static_cast<uint32_t>(eth_addresses_.size() - 1);
 }
+
 NodeId NodeManager::get_id(const std::string &wallet_address) {
   auto it =
       std::find(eth_addresses_.begin(), eth_addresses_.end(), wallet_address);
@@ -31,15 +37,22 @@ bool NodeManager::is_valid_id(NodeId id) {
   return true;
 }
 
-void EdgeManager::add_edge(NodeId from, NodeId to, EdgeId edg_id) {
+int EdgeManager::add_edge(NodeId from, NodeId to, EdgeId edg_id) {
   if (from >= edg_from_.size()) {
     edg_from_.resize(from + 1);
   }
   if (to >= edg_to_.size()) {
     edg_to_.resize(to + 1);
   }
-  edg_from_[from].push_back(std::pair(to, edg_id));
-  edg_to_[to].push_back(std::pair(from, edg_id));
+  auto it =
+      std::find_if(edg_from_[from].begin(), edg_from_[from].end(),
+                   [to](std::pair<NodeId, EdgeId> x) { return to == x.first; });
+  if (it == edg_from_[from].end()) {
+    edg_from_[from].push_back(std::pair(to, edg_id));
+    edg_to_[to].push_back(std::pair(from, edg_id));
+    return 0;
+  }
+  return -1;
 }
 void EdgeManager::remove_edge(NodeId from, NodeId to) {
   if (from >= edg_from_.size()) {
@@ -106,18 +119,16 @@ std::vector<NodeId> EdgeManager::get_edges_to(NodeId node_id) {
   return res;
 }
 
-EdgeId EdgeStorage::add_edge(double value_eth, uint64_t timestamp,
-                             uint32_t gas_price_gwei, uint32_t method_id) {
+EdgeId EdgeStorage::add_edge(double value_eth, uint64_t timestamp) {
   value_eth_v_.push_back(value_eth);
   timestamp_v_.push_back(timestamp);
-  gas_price_gwei_v_.push_back(gas_price_gwei);
-  method_id_v_.push_back(method_id);
+
   return value_eth_v_.size() - 1;
 }
-NodeId NodeStorage::add_node(bool is_contract, uint64_t first_seen_timestamp,
-                             uint32_t nonce) {
-  is_contract_v_.push_back(is_contract);
-  first_seen_timestamp_v_.push_back(first_seen_timestamp);
+
+NodeId NodeStorage::add_node(uint64_t balance, uint32_t nonce) {
+
+  balance_v_.push_back(balance);
   nonce_v_.push_back(nonce);
-  return is_contract_v_.size();
+  return balance_v_.size();
 }

@@ -1,3 +1,4 @@
+#include "graph/graph.h"
 #include "sockets.h"
 #include <cstring>
 #include <nlohmann/json.hpp>
@@ -12,9 +13,23 @@ void sigchld_handler(int signum) {
 }
 
 void client_handle(Socket &socket) {
-  for (int i = 0; i < 5; i++) {
+  int counter = 0;
+  EthGraph graph;
+  std::string start_address;
+  while (true) {
     json data = socket.recv_json();
-    socket.send_json(data);
+    if (data.contains("end")) {
+      bool res = graph.is_cycled(start_address);
+      std::cout << "RESULT OF CHECK ==== " << res << std::endl;
+      break;
+    } else {
+      graph.add(data);
+      counter += 1;
+      if (counter == 1) {
+        start_address = data["target_node"]["address"];
+      }
+      std::cout << counter << std::endl;
+    }
   }
 }
 

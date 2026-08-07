@@ -42,9 +42,12 @@ target_link_libraries(graph_test PRIVATE nlohmann_json::nlohmann_json)
 target_include_directories(graph_test PRIVATE ${SRC}/graph/)
 
 
-add_executable(server ${SRC}/server.cpp)
+add_executable(server
+    ${SRC}/server.cpp
+    ${SRC}/graph/graph.cpp)
 target_link_libraries(server PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(server PRIVATE ${SRC}/graph/)
 target_include_directories(server PRIVATE ${SRC}/analysis_engine)
 
 
