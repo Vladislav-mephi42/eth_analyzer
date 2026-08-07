@@ -47,13 +47,13 @@ class NetClient:
             data.extend(packet)
         return bytes(data)
 
-    def send_transaction(self, transaction: dict) -> None:
+    def send_json(self, transaction: dict) -> None:
         payload_data = json.dumps(transaction).encode("utf-8")
         payload_len = len(payload_data)
         header = struct.pack("!I", payload_len)
         self.socket.sendall(header + payload_data)
 
-    def get_transaction(self) -> dict:
+    def get_json(self) -> dict:
         header_bytes = self._recv_exact(4)
         payload_len = struct.unpack("!I", header_bytes)[0]
         payload_data = self._recv_exact(payload_len)

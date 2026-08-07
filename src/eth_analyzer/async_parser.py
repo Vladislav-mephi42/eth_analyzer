@@ -1,10 +1,13 @@
 import asyncio
 import json
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
 from web3 import AsyncWeb3
 from web3.providers import AsyncHTTPProvider
+
+from eth_analyzer.net_client import NetClient
 
 
 async def get_wallet_info(w3: AsyncWeb3, address: str) -> dict:
@@ -66,19 +69,24 @@ async def get_transactions_with_neighbours(
 
             if sender == address:
                 neighbours.add(receiver)
-                # print("\n++++++++++++++++++++++++++++++++++++++++\n")
+
             elif receiver == address:
                 neighbours.add(sender)
-                # print("\n++++++++++++++++++++++++++++++++++++++++\n")
+
             else:
                 print("\n??????????????????\n?????????????")
+            raw_timestamp = tx.get("metadata", {}).get("blockTimestamp")
+            unix_time = 0
 
+            if raw_timestamp:
+                dt = datetime.fromisoformat(raw_timestamp.replace("Z", "+00:00"))
+                unix_time = int(dt.timestamp())
             edge = {
                 "from": sender,
                 "to": receiver,
                 "value": tx.get("value"),
-                "timestamp": tx.get("metadata", {}).get("blockTimestamp"),
-                "hash": tx.get("hash"),
+                "timestamp": unix_time,
+                "id": tx.get("id"),
             }
             edges.append(edge)
 
@@ -110,23 +118,29 @@ async def producer(w3, address, max_height, max_deep, queue):
 async def consumer(queue):
     counter = 0
     edge_counter = 0
-    while True:
-        item = await queue.get()
-        print(
-            f"\n\n[CONSUMED BY CONSUMER] NONSE ==={(item.get('target_node')).get('nonce')} "
-        )
-
-        counter += 1
-        edge_counter += len(item.get("edges"))
-
-        print("\n Counter == ", end="")
-        print(counter, "\n\n")
-        print("\n EdgeCounter == ", end="")
-        print(edge_counter, "\n\n")
-        for i in item.get("edges"):
-            print((str(i.get("to")))[2:6], end="  ")
-        print()
-        queue.task_done()
+    with NetClient("127.0.0.1", 7009) as client:
+        try:
+            while True:
+                item = await queue.get()
+                client.send_json(item)
+                print(
+                    f"\n\n[CONSUMED BY CONSUMER] NONSE ==={(item.get('target_node')).get('nonce')} "
+                )
+                print("address: ", (item["target_node"]["address"])[2:8])
+                counter += 1
+                edge_counter += len(item.get("edges"))
+                print("\n Counter == ", end="")
+                print(counter, "\n\n")
+                print("\n EdgeCounter == ", end="")
+                print(edge_counter, "\n\n")
+                for i in item.get("edges"):
+                    print((str(i.get("to")))[2:8], end="  ")
+                print()
+                queue.task_done()
+        except asyncio.CancelledError:
+            end = {}
+            end["end"] = "yes"
+            client.send_json(end)
 
 
 async def global_func(address):
@@ -146,7 +160,7 @@ async def global_func(address):
 
     queue = asyncio.Queue()
 
-    producer_task = asyncio.create_task(producer(w3, address, 2, 6, queue))
+    producer_task = asyncio.create_task(producer(w3, address, 2, 12, queue))
     consumer_task = asyncio.create_task(consumer(queue))
 
     await producer_task
