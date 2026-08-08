@@ -1,6 +1,13 @@
 import json
+import logging
 import socket
 import struct
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 def sum(a: int, b: int) -> int:
@@ -16,13 +23,13 @@ class NetClient:
     def connect(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        print(f"[Python] Connected to C++ Engine at {self.host}:{self.port}")
+        logging.info("[Python] Connected to C++ Engine at %s:%s", self.host, self.port)
 
     def close(self):
         if self.socket:
             try:
                 self.socket.close()
-                print("[Python] Connection closed.")
+                logging.info("[Python] Connection closed.")
             finally:
                 self.socket = None
 
