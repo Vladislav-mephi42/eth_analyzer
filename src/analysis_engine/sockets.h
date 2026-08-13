@@ -1,3 +1,6 @@
+#ifndef SOCKETS_H
+#define SOCKETS_H
+
 #include <arpa/inet.h>
 #include <iostream>
 #include <netinet/in.h>
@@ -169,3 +172,5 @@ public:
     return Client_socket(client);
   }
 };
+
+#endif

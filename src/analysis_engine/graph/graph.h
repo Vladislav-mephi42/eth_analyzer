@@ -1,3 +1,5 @@
+#ifndef GRAPH_H
+#define GRAPH_H
 
 #include <algorithm>
 #include <cstdint>
@@ -34,8 +36,8 @@ public:
   void remove_edge(NodeId from, NodeId to);
   std::vector<NodeId> get_nodes_to(NodeId node_id);
   std::vector<NodeId> get_nodes_from(NodeId node_id);
-  std::vector<NodeId> get_edges_from(NodeId node_id);
-  std::vector<NodeId> get_edges_to(NodeId node_id);
+  std::vector<EdgeId> get_edges_from(NodeId node_id);
+  std::vector<EdgeId> get_edges_to(NodeId node_id);
 };
 
 class EdgeStorage {
@@ -49,8 +51,9 @@ public:
     value_eth_v_.pop_back();
     timestamp_v_.pop_back();
   }
+  int size() { return timestamp_v_.size(); }
   const std::vector<double> &get_value_eth_v() const { return value_eth_v_; }
-  const std::vector<uint64_t> get_timestamp_v() const { return timestamp_v_; }
+  const std::vector<uint64_t> &get_timestamp_v() const { return timestamp_v_; }
 };
 
 class NodeStorage {
@@ -79,79 +82,41 @@ private:
 public:
   int size() { return node_s_.size(); }
   void add_node(const std::string &wallet_address, uint64_t balance,
-                uint32_t nonce) {
-    auto id = node_m_.add_wallet(wallet_address);
-    if (id >= 0) {
-      node_s_.add_node(balance, nonce);
-    }
-  }
+                uint32_t nonce);
   void add_edge(const std::string &from_address, const std::string &to_address,
-                double value_eth, uint64_t timestamp) {
-    NodeId from = node_m_.get_id(from_address);
-    NodeId to = node_m_.get_id(to_address);
-    EdgeId edg_id = edg_s_.add_edge(value_eth, timestamp);
-    if (edg_m_.add_edge(from, to, edg_id) == -1) {
-      edg_s_.pop_edge();
-    }
+                double value_eth, uint64_t timestamp);
+  bool is_cycled(const std::string &start_address);
+  bool is_path(const std::string &from_address, const std::string &to_address);
+  void add(const json &data);
+  const std::vector<double> &get_edges_value() const {
+    return edg_s_.get_value_eth_v();
   }
-  bool is_cycled(const std::string &start_address) {
-    NodeId node_id = node_m_.get_id(start_address);
-    std::vector<NodeId> stack;
-    stack.push_back(node_id);
-    while (true) {
-      node_id = stack.back();
-      auto nodes = edg_m_.get_nodes_from(node_id);
-      if (nodes.size() == 0) {
-        break;
-      }
-      for (NodeId elem : nodes) {
-        auto it = std::find(stack.begin(), stack.end(), elem);
-        if (it != stack.end()) {
-          return true;
-        }
-        stack.push_back(elem);
-      }
-    }
-    return false;
+  const std::vector<uint64_t> &get_edges_timestamp() const {
+    return edg_s_.get_timestamp_v();
   }
-  bool is_path(const std::string &from_address, const std::string &to_address) {
-    NodeId from_id = node_m_.get_id(from_address);
-    NodeId to_id = node_m_.get_id(to_address);
-    std::vector<NodeId> stack;
-    stack.push_back(from_id);
-    while (true) {
-      auto node_id = stack.back();
-      auto nodes = edg_m_.get_nodes_from(node_id);
-      if (nodes.size() == 0) {
-        break;
-      }
-      for (NodeId elem : nodes) {
-        if (elem == to_id) {
-          return true;
-        }
-        auto it = std::find(stack.begin(), stack.end(), elem);
-        if (it != stack.end()) {
-          throw std::runtime_error("cycle founded");
-        }
-        stack.push_back(elem);
-      }
-    }
-    return false;
+  const std::vector<uint32_t> &get_nodes_nonce() const {
+    return node_s_.get_nonce_v_();
   }
-
-  void add(const json &data) {
-
-    add_node(data["target_node"]["address"],
-             data["target_node"]["balance"].get<uint64_t>(),
-             data["target_node"]["nonce"].get<uint32_t>());
-    for (const auto &elem : data["neighbours_data"]) {
-
-      add_node(elem["address"], elem["balance"].get<uint64_t>(),
-               elem["nonce"].get<uint32_t>());
-    }
-    for (const auto &elem : data["edges"]) {
-      add_edge(elem["from"], elem["to"], elem["value"].get<double>(),
-               elem["timestamp"].get<uint64_t>());
-    }
+  const std::vector<uint64_t> &get_nodes_balance() const {
+    return node_s_.get_balance_v_();
+  }
+  int node_size() { return node_s_.size(); }
+  int edge_size() { return edg_s_.size(); }
+  NodeId get_node_id(const std::string &wallet_address) {
+    return node_m_.get_id(wallet_address);
+  }
+  std::string get_address_from_id(NodeId id) { return node_m_.get_address(id); }
+  std::vector<NodeId> get_nodes_to(NodeId node_id) {
+    return edg_m_.get_nodes_to(node_id);
+  }
+  std::vector<NodeId> get_nodes_from(NodeId node_id) {
+    return edg_m_.get_nodes_from(node_id);
+  }
+  std::vector<EdgeId> get_edges_from(NodeId node_id) {
+    return edg_m_.get_nodes_from(node_id);
+  }
+  std::vector<EdgeId> get_edges_to(NodeId node_id) {
+    return edg_m_.get_edges_to(node_id);
   }
 };
+#endif
