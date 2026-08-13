@@ -57,9 +57,9 @@ def test_net_client_context_manager_integration(mock_cpp_engine):
     host, port = mock_cpp_engine
     with NetClient(host=host, port=port) as client:
         test_payload = {"hash": "0xabc", "value": 10}
-        client.send_transaction(test_payload)
+        client.send_json(test_payload)
 
-        response = client.get_transaction()
+        response = client.get_json()
         assert response["hash"] == "0xabc"
         assert response["status"] == "processed_by_mock"
     assert client.socket is None
