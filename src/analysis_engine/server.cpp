@@ -1,4 +1,5 @@
 #include "graph/graph.h"
+#include "handle_strategies/strategy.h"
 #include "sockets.h"
 #include <cstdlib>
 #include <cstring>
@@ -20,13 +21,30 @@ void sigint_handler(int signum) {
 void client_handle(Socket &socket) {
   int counter = 0;
   EthGraph graph;
+  std::vector<std::shared_ptr<HandleStrategy>> strategies;
+  strategies.push_back(
+      std::make_shared<TransitStrategy>(TransitStrategy(&graph, 3)));
+  strategies.push_back(std::make_shared<CycleStrategy>(CycleStrategy(&graph)));
+  auto res_data = json::array();
   std::string start_address;
   while (true) {
     json data = socket.recv_json();
     if (data.contains("end")) {
-      bool res = graph.is_cycled(start_address);
+      for (const auto &elem : strategies) {
+        res_data.push_back(elem->report(start_address));
+      }
       std::cout << "[INFO] counter: " << counter << std::endl;
-      std::cout << "[INFO] result of check: " << res << std::endl;
+      socket.send_json(res_data);
+      for (const auto &elem : res_data) {
+        if (elem["res"]) {
+          std::cout << "[INFO] result of check: " << elem["level"] << " "
+                    << elem["res_string"] << std::endl;
+        } else {
+          std::cout << "[INFO] result of check: " << elem["res_string"]
+                    << std::endl;
+        }
+      }
+
       break;
     } else {
       graph.add(data);
@@ -40,7 +58,7 @@ void client_handle(Socket &socket) {
 
 int main() {
   try {
-    int port = 7009;
+    int port = 7008;
     int backlog = 8;
 
     struct sigaction action_chld;
