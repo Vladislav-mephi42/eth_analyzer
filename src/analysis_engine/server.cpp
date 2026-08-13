@@ -23,8 +23,9 @@ void client_handle(Socket &socket) {
   EthGraph graph;
   std::vector<std::shared_ptr<HandleStrategy>> strategies;
   strategies.push_back(
-      std::make_shared<TransitStrategy>(TransitStrategy(&graph, 3)));
+      std::make_shared<TransitStrategy>(TransitStrategy(&graph, 5 * 60)));
   strategies.push_back(std::make_shared<CycleStrategy>(CycleStrategy(&graph)));
+  strategies.push_back(std::make_shared<RatioStrategy>(RatioStrategy(&graph)));
   auto res_data = json::array();
   std::string start_address;
   while (true) {
@@ -35,6 +36,10 @@ void client_handle(Socket &socket) {
       }
       std::cout << "[INFO] counter: " << counter << std::endl;
       socket.send_json(res_data);
+      std::cout << std::endl;
+      std::cout
+          << "========================RESULT OF CHECK========================"
+          << std::endl;
       for (const auto &elem : res_data) {
         if (elem["res"]) {
           std::cout << "[INFO] result of check: " << elem["level"] << " "
@@ -44,6 +49,10 @@ void client_handle(Socket &socket) {
                     << std::endl;
         }
       }
+      std::cout
+          << "==============================================================="
+          << std::endl
+          << std::endl;
 
       break;
     } else {
