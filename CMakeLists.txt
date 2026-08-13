@@ -40,6 +40,7 @@ add_executable(graph_test
 target_link_libraries(graph_test PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(graph_test PRIVATE nlohmann_json::nlohmann_json)
 target_include_directories(graph_test PRIVATE ${SRC}/graph/)
+target_include_directories(graph_test PRIVATE ${SRC}/handle_strategies/)
 
 
 add_executable(server
