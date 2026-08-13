@@ -89,7 +89,7 @@ async def get_transactions(
             transfers.extend(result_data["transfers"])
 
     transfers.sort(key=lambda t: int(t["blockNum"], 16), reverse=True)
-
+    max_count = max_count * 2
     return transfers[:max_count]
 
 
@@ -267,8 +267,14 @@ async def consumer(queue):
                 counter,
                 edge_counter,
             )
+            print()
+            print()
+            print(
+                "==========================RESULT OF CHECK================================="
+            )
             res_data = client.get_json()
             for elem in res_data:
+                print()
                 if elem.get("res") == True:
                     print(
                         "[INFO] result of check: ",
@@ -278,6 +284,10 @@ async def consumer(queue):
                     )
                 else:
                     print("[INFO] result of check: ", elem.get("res_string"))
+            print(
+                "=========================================================================="
+            )
+            print()
 
 
 async def global_func(address, width, height):
@@ -333,6 +343,7 @@ def main():
         start_wallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
     print("Enter the width of the dependency graph: ")
     width = int(input())
+    width = width // 2
     print("Enter the height of the dependency graph: ")
     height = int(input())
     try:
