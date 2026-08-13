@@ -132,3 +132,82 @@ NodeId NodeStorage::add_node(uint64_t balance, uint32_t nonce) {
   nonce_v_.push_back(nonce);
   return balance_v_.size();
 }
+
+void EthGraph::add_node(const std::string &wallet_address, uint64_t balance,
+                        uint32_t nonce) {
+  auto id = node_m_.add_wallet(wallet_address);
+  if (id >= 0) {
+    node_s_.add_node(balance, nonce);
+  }
+}
+void EthGraph::add_edge(const std::string &from_address,
+                        const std::string &to_address, double value_eth,
+                        uint64_t timestamp) {
+  NodeId from = node_m_.get_id(from_address);
+  NodeId to = node_m_.get_id(to_address);
+  EdgeId edg_id = edg_s_.add_edge(value_eth, timestamp);
+  if (edg_m_.add_edge(from, to, edg_id) == -1) {
+    edg_s_.pop_edge();
+  }
+}
+bool EthGraph::is_cycled(const std::string &start_address) {
+  NodeId node_id = node_m_.get_id(start_address);
+  std::vector<NodeId> stack;
+  stack.push_back(node_id);
+  while (true) {
+    node_id = stack.back();
+    auto nodes = edg_m_.get_nodes_from(node_id);
+    if (nodes.size() == 0) {
+      break;
+    }
+    for (NodeId elem : nodes) {
+      auto it = std::find(stack.begin(), stack.end(), elem);
+      if (it != stack.end()) {
+        return true;
+      }
+      stack.push_back(elem);
+    }
+  }
+  return false;
+}
+bool EthGraph::is_path(const std::string &from_address,
+                       const std::string &to_address) {
+  NodeId from_id = node_m_.get_id(from_address);
+  NodeId to_id = node_m_.get_id(to_address);
+  std::vector<NodeId> stack;
+  stack.push_back(from_id);
+  while (true) {
+    auto node_id = stack.back();
+    auto nodes = edg_m_.get_nodes_from(node_id);
+    if (nodes.size() == 0) {
+      break;
+    }
+    for (NodeId elem : nodes) {
+      if (elem == to_id) {
+        return true;
+      }
+      auto it = std::find(stack.begin(), stack.end(), elem);
+      if (it != stack.end()) {
+        throw std::runtime_error("cycle founded");
+      }
+      stack.push_back(elem);
+    }
+  }
+  return false;
+}
+
+void EthGraph::add(const json &data) {
+
+  add_node(data["target_node"]["address"],
+           data["target_node"]["balance"].get<uint64_t>(),
+           data["target_node"]["nonce"].get<uint32_t>());
+  for (const auto &elem : data["neighbours_data"]) {
+
+    add_node(elem["address"], elem["balance"].get<uint64_t>(),
+             elem["nonce"].get<uint32_t>());
+  }
+  for (const auto &elem : data["edges"]) {
+    add_edge(elem["from"], elem["to"], elem["value"].get<double>(),
+             elem["timestamp"].get<uint64_t>());
+  }
+}
