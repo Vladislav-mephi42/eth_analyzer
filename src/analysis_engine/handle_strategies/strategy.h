@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <queue>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -13,8 +14,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
-
 using json = nlohmann::json;
 
 class HandleStrategy {
@@ -40,6 +41,86 @@ public:
     data["res"] = false;
     data["res_string"] =
         "Cycle wasn't founded. Start address == " + std::string(start_address);
+    return data;
+  }
+};
+class FanInStrategy : public HandleStrategy {
+private:
+  EthGraph *graph;
+  size_t deep;
+  std::unordered_set<NodeId> BFS(NodeId node_id, size_t deep) const {
+    std::queue<std::pair<NodeId, size_t>> queue;
+    std::unordered_set<NodeId> visited;
+    queue.push({node_id, 0});
+    visited.insert(node_id);
+    size_t level;
+    int counter = deep;
+    while (true) {
+      auto [node_id, level] = queue.front();
+      auto it = visited.find(node_id);
+      if (it != visited.end()) {
+        throw std::runtime_error("cycle was founded");
+      }
+
+      queue.pop();
+
+      std::vector<NodeId> nodes = graph->get_nodes_from(node_id);
+      if (nodes.empty() || counter <= 0 || queue.empty()) {
+        break;
+      }
+      if (level <= deep) {
+        for (const auto &elem : nodes) {
+          queue.push({elem, level + 1});
+          visited.insert(elem);
+        }
+      }
+    }
+    return visited;
+  }
+
+public:
+  FanInStrategy(EthGraph *graph, size_t deep) : graph(graph) {}
+  json report(const std::string &start_address) const override {
+
+    NodeId node_id = graph->get_node_id(start_address);
+
+    std::vector<NodeId> nodes = graph->get_nodes_from(node_id);
+    std::vector<std::unordered_set<NodeId>> sets;
+    for (const auto &elem : nodes) {
+      sets.push_back(BFS(elem, deep));
+    }
+    std::unordered_map<NodeId, size_t> map;
+    std::unordered_map<NodeId, size_t> fan_in;
+    for (const auto &set : sets) {
+      for (const auto &elem : set) {
+        map[elem] = 0;
+      }
+    }
+    for (const auto &set : sets) {
+      for (const auto &elem : set) {
+        if (++map[elem] > 1) {
+          fan_in[elem] = map[elem];
+        }
+      }
+    }
+    json data;
+    std::string res;
+    data["level"] = "[MEDIUM]";
+    if (!fan_in.empty()) {
+      data["res"] = true;
+      for (const auto &elem : fan_in) {
+        res += "Addresses/fan-in frequency:\n";
+        res += graph->get_address_from_id(elem.first);
+        res += " / ";
+        res += std::to_string(elem.second);
+      }
+      data["res_string"] = res;
+      return data;
+    }
+    data["res"] = false;
+    res = "No fan-in patterns at deep: ";
+    res += std::to_string(deep);
+    data["res_string"] = res;
     return data;
   }
 };
