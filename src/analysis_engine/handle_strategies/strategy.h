@@ -8,6 +8,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <queue>
+#include <set>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -47,98 +48,87 @@ public:
   }
 };
 
-std::unordered_set<NodeId>
-BFS(EthGraph *graph, NodeId node_id, size_t deep,
-    std::promise<std::unordered_set<NodeId>> &promise) {
-  try {
-    std::queue<std::pair<NodeId, size_t>> queue;
-    std::unordered_set<NodeId> visited;
-    queue.push({node_id, 0});
+std::unordered_map<NodeId, size_t> BFS(EthGraph *graph, NodeId start,
+                                       size_t max_depth) {
+  std::queue<std::tuple<NodeId, size_t>> queue;
+  std::unordered_map<NodeId, size_t> visited;
+  queue.push({start, 0});
+  visited.insert({start, 1});
 
-    size_t level;
+  while (!queue.empty()) {
+    auto [current, level] = queue.front();
+    queue.pop();
 
-    while (true) {
-      if (queue.empty()) {
-        break;
-      }
-      auto [node_id, level] = queue.front();
-      auto it = visited.find(node_id);
-      if (it != visited.end()) {
-        throw std::runtime_error("cycle was founded");
-      }
-      visited.insert(node_id);
-      queue.pop();
+    if (level >= max_depth)
+      continue;
 
-      std::vector<NodeId> nodes = graph->get_nodes_from(node_id);
-      if (nodes.empty()) {
-        break;
-      }
-      if (level <= deep) {
-        for (const auto &elem : nodes) {
-          queue.push({elem, level + 1});
-        }
+    for (const auto &neighbor : graph->get_nodes_from(current)) {
+      auto it = visited.find(neighbor);
+      if (it == visited.end()) {
+        visited.insert({neighbor, 1});
+        queue.push({neighbor, level + 1});
+      } else {
+        it->second++;
       }
     }
-    promise.set_value(visited);
-  } catch (std::exception &e) {
-    promise.set_exception(std::current_exception());
   }
+  return visited;
 }
-
 class FanInStrategy : public HandleStrategy {
 private:
   EthGraph *graph;
   size_t deep;
 
 public:
-  FanInStrategy(EthGraph *graph, size_t deep) : graph(graph) {}
+  FanInStrategy(EthGraph *graph, size_t deep) : graph(graph), deep(deep) {}
+
   json report(const std::string &start_address) const override {
+    NodeId start_id = graph->get_node_id(start_address);
+    std::vector<NodeId> neighbors = graph->get_nodes_from(start_id);
 
-    NodeId node_id = graph->get_node_id(start_address);
-    std::vector<NodeId> nodes = graph->get_nodes_from(node_id);
-    std::vector<std::unordered_set<NodeId>> sets;
-    std::promise<std::unordered_set<NodeId>> promise;
-    std::vector<std::thread> threads;
-    std::vector<std::future<std::unordered_set<NodeId>>> futures;
-    for (const auto &elem : nodes) {
-      std::promise<std::unordered_set<NodeId>> promise;
-      auto future = promise.get_future();
-      futures.push_back(std::move(future));
-      threads.emplace_back(BFS(graph, elem, deep, std::ref(promise)));
-    }
-    for (auto &elem : threads) {
-      elem.join();
-    }
-    for (auto &elem : futures) {
-      sets.push_back(elem.get());
+    std::vector<std::future<std::unordered_map<NodeId, size_t>>> futures;
+    for (const auto &neighbor : neighbors) {
+      futures.push_back(
+          std::async(std::launch::async, BFS, graph, neighbor, deep));
     }
 
-    std::unordered_map<NodeId, size_t> map;
+    std::vector<std::unordered_map<NodeId, size_t>> sets;
+    sets.reserve(futures.size());
+    for (auto &fut : futures) {
+      sets.push_back(fut.get());
+    }
+
+    std::unordered_map<NodeId, size_t> count_map;
+    for (const auto &set : sets) {
+      for (const auto &node : set) {
+
+        count_map[node.first] += node.second;
+      }
+    }
+
     std::unordered_map<NodeId, size_t> fan_in;
-    for (const auto &set : sets) {
-      for (const auto &elem : set) {
-        map[elem] = 0;
+    for (const auto &elem : count_map) {
+      if (elem.second > 1) {
+
+        fan_in[elem.first] = elem.second;
       }
     }
-    for (const auto &set : sets) {
-      for (const auto &elem : set) {
-        if (++map[elem] > 1) {
-          fan_in[elem] = map[elem];
-        }
-      }
-    }
+
     json data;
-    std::string res;
     data["level"] = "[MEDIUM]";
-    if (!fan_in.empty()) {
+    std::string res;
+
+    if (fan_in.size() > 0) {
       data["res"] = true;
-      for (const auto &elem : fan_in) {
-        res += "Addresses/fan-in frequency:\n";
-        res += graph->get_address_from_id(elem.first);
+      res += "\nAddresses/fan-in frequency:\n";
+      for (const auto &[node, count] : fan_in) {
+        res += graph->get_address_from_id(node);
         res += " / ";
-        res += std::to_string(elem.second);
+        res += std::to_string(count);
+        res += "\n";
       }
       data["res_string"] = res;
+
       return data;
     }
     data["res"] = false;
@@ -190,6 +180,7 @@ public:
                            std::to_string(static_cast<int>(diff));
       return data;
     }
+
     data["res"] = false;
     data["res_string"] =
         "This crypto wallet is not necessarily a bot, a contract, or another "
