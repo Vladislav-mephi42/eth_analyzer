@@ -130,7 +130,7 @@ TEST_CASE("Strategies") {
     graph.add_node("10", 0, 0);
 
     graph.add_edge("1", "2", 0, 1);
-    graph.add_edge("1", "3", 0, 2);
+    graph.add_edge("1", "3", 0, 5);
     graph.add_edge("1", "4", 0, 3);
     graph.add_edge("1", "5", 0, 2);
     graph.add_edge("1", "6", 0, 1);
@@ -142,5 +142,90 @@ TEST_CASE("Strategies") {
     TransitStrategy strategy(&graph, 4);
     auto data = strategy.report("1");
     REQUIRE(data["res"] == true);
+  }
+  SECTION("FanInStrategy(1)") {
+    EthGraph graph;
+
+    graph.add_node("1", 0, 0);
+    graph.add_node("2", 0, 0);
+    graph.add_node("3", 0, 0);
+    graph.add_node("4", 0, 0);
+    graph.add_node("5", 0, 0);
+    graph.add_node("6", 0, 0);
+    graph.add_node("7", 0, 0);
+    graph.add_node("8", 0, 0);
+    graph.add_node("9", 0, 0);
+    graph.add_node("10", 0, 0);
+
+    graph.add_edge("1", "2", 0, 1);
+    graph.add_edge("1", "3", 0, 2);
+    graph.add_edge("1", "4", 0, 3);
+
+    graph.add_edge("2", "5", 0, 1);
+    graph.add_edge("3", "5", 0, 1);
+    graph.add_edge("4", "5", 0, 1);
+    graph.add_edge("5", "6", 0, 1);
+
+    FanInStrategy strategy(&graph, 9);
+    auto data = strategy.report("1");
+
+    REQUIRE(data["res"] == true);
+  }
+  SECTION("FanInStrategy(2)") {
+    EthGraph graph;
+
+    graph.add_node("1", 0, 0);
+    graph.add_node("2", 0, 0);
+    graph.add_node("3", 0, 0);
+    graph.add_node("4", 0, 0);
+    graph.add_node("5", 0, 0);
+    graph.add_node("6", 0, 0);
+    graph.add_node("7", 0, 0);
+    graph.add_node("8", 0, 0);
+    graph.add_node("9", 0, 0);
+    graph.add_node("10", 0, 0);
+
+    graph.add_edge("1", "2", 0, 1);
+    graph.add_edge("1", "3", 0, 2);
+    graph.add_edge("1", "4", 0, 3);
+
+    graph.add_edge("2", "5", 0, 1);
+    graph.add_edge("3", "6", 0, 1);
+    graph.add_edge("4", "7", 0, 1);
+    graph.add_edge("5", "8", 0, 1);
+    graph.add_edge("6", "8", 0, 1);
+    graph.add_edge("7", "8", 0, 1);
+
+    FanInStrategy strategy(&graph, 9);
+    auto data = strategy.report("1");
+
+    REQUIRE(data["res"] == true);
+  }
+  SECTION("FanInStrategy(3)") {
+    EthGraph graph;
+
+    graph.add_node("1", 0, 0);
+    graph.add_node("2", 0, 0);
+    graph.add_node("3", 0, 0);
+    graph.add_node("4", 0, 0);
+    graph.add_node("5", 0, 0);
+    graph.add_node("6", 0, 0);
+    graph.add_node("7", 0, 0);
+    graph.add_node("8", 0, 0);
+    graph.add_node("9", 0, 0);
+    graph.add_node("10", 0, 0);
+
+    graph.add_edge("1", "2", 0, 1);
+    graph.add_edge("1", "3", 0, 2);
+    graph.add_edge("1", "4", 0, 3);
+
+    graph.add_edge("2", "5", 0, 1);
+    graph.add_edge("3", "6", 0, 1);
+    graph.add_edge("4", "7", 0, 1);
+
+    FanInStrategy strategy(&graph, 9);
+    auto data = strategy.report("1");
+
+    REQUIRE(data["res"] == false);
   }
 }
