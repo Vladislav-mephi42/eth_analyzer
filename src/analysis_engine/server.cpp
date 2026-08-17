@@ -26,6 +26,8 @@ void client_handle(Socket &socket) {
       std::make_shared<TransitStrategy>(TransitStrategy(&graph, 5 * 60)));
   strategies.push_back(std::make_shared<CycleStrategy>(CycleStrategy(&graph)));
   strategies.push_back(std::make_shared<RatioStrategy>(RatioStrategy(&graph)));
+  strategies.push_back(
+      std::make_shared<FanInStrategy>(FanInStrategy(&graph, 12)));
   auto res_data = json::array();
   std::string start_address;
   while (true) {
