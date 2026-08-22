@@ -197,17 +197,30 @@ bool EthGraph::is_path(const std::string &from_address,
 }
 
 void EthGraph::add(const json &data) {
-
-  add_node(data["target_node"]["address"],
-           data["target_node"]["balance"].get<uint64_t>(),
-           data["target_node"]["nonce"].get<uint32_t>());
+  try {
+    add_node(data["target_node"]["address"],
+             data["target_node"]["balance"].get<uint64_t>(),
+             data["target_node"]["nonce"].get<uint32_t>());
+  } catch (const std::exception &e) {
+    std::cout << e.what() << std::endl;
+  }
   for (const auto &elem : data["neighbours_data"]) {
-
-    add_node(elem["address"], elem["balance"].get<uint64_t>(),
-             elem["nonce"].get<uint32_t>());
+    try {
+      add_node(elem["address"], elem["balance"].get<uint64_t>(),
+               elem["nonce"].get<uint32_t>());
+    } catch (const std::exception &e) {
+      std::cout << e.what() << std::endl;
+    }
   }
   for (const auto &elem : data["edges"]) {
-    add_edge(elem["from"], elem["to"], elem["value"].get<double>(),
-             elem["timestamp"].get<uint64_t>());
+    try {
+      add_edge(elem["from"], elem["to"], elem["value"].get<double>(),
+               elem["timestamp"].get<uint64_t>());
+    } catch (const std::exception &e) {
+      std::cout << "[INFO] Invalid type of transaction argument: the program "
+                   "cannot currently handle transactions whose arguments "
+                   "contain None. This is not a real error => ";
+      std::cout << e.what() << std::endl;
+    }
   }
 }
