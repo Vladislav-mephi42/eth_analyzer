@@ -19,7 +19,18 @@ To achieve maximum performance, the graph uses the Structure of Arrays (SoA) pat
 This provides spatial locality of data. When filtering or searching by a specific attribute, data is read linearly. This efficiently fills the CPU cache lines (L1/L2 cache) and minimizes cache misses.
 
 
+### Preparation
 
+1. **Get an API key:**
+   - Sign up at [alchemy.com](https://www.alchemy.com/)
+   - Create a new app and copy the HTTPS endpoint URL
+
+2. **Configure environment variables:**
+   Create a `.env` file in the project root with:
+   ```env
+   ALCHEMY_HTTP_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY
+
+   
 ## How to Test the System
 
 To test how this system works, follow these steps:
