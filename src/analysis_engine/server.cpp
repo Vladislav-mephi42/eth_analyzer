@@ -46,8 +46,9 @@ void client_handle(Socket &socket) {
           << std::endl;
       for (const auto &elem : res_data) {
         if (elem["res"]) {
-          std::cout << "[INFO] result of check: " << elem["level"] << " "
-                    << elem["res_string"] << std::endl;
+          std::cout << "[INFO] result of check: "
+                    << elem["level"].get<std::string>() << " "
+                    << elem["res_string"].get<std::string>() << std::endl;
         } else {
           std::cout << "[INFO] result of check: " << elem["res_string"]
                     << std::endl;
