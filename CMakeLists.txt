@@ -34,18 +34,21 @@ target_link_libraries(sockets_test PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(sockets_test PRIVATE nlohmann_json::nlohmann_json)
 target_include_directories(sockets_test PRIVATE ${SRC}/)
 
-add_executable(graph_test
-    ${TESTS}/graph_test.cpp
-    ${SRC}/graph/graph.cpp)
-target_link_libraries(graph_test PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(graph_test PRIVATE nlohmann_json::nlohmann_json)
-target_include_directories(graph_test PRIVATE ${SRC}/graph/)
-target_include_directories(graph_test PRIVATE ${SRC}/handle_strategies/)
+add_executable(main_test
+    ${TESTS}/main_test.cpp
+    ${SRC}/graph/graph.cpp
+    ${SRC}/handle_strategies/strategy.cpp
+    )
+target_link_libraries(main_test PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(main_test PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(main_test PRIVATE ${SRC}/graph/)
+target_include_directories(main_test PRIVATE ${SRC}/handle_strategies/)
 
 
 add_executable(server
     ${SRC}/server.cpp
-    ${SRC}/graph/graph.cpp)
+    ${SRC}/graph/graph.cpp
+    ${SRC}/handle_strategies/strategy.cpp)
 target_link_libraries(server PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
 target_include_directories(server PRIVATE ${SRC}/graph/)
