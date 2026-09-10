@@ -341,7 +341,9 @@ def main():
     start_wallet = input()
     if len(start_wallet) == 0:
         start_wallet = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
-    print("Enter the width of the dependency graph: ")
+    print(
+        "Enter the width of the dependency graph\n(The final width is the width raised to a power equal to the depth.): "
+    )
     width = int(input())
     width = width // 2
     print("Enter the height of the dependency graph: ")
